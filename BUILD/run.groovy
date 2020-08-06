@@ -1,23 +1,43 @@
 import com.ibm.dbb.build.*
 import com.ibm.dbb.repository.*
 import com.ibm.dbb.dependency.*
+import groovy.util.*
+import groovy.transform.* 
 
-// Clean up leftover datasets (SAMPLE.CUSTRPT, SAMPLE.CUSTOUT)
+@Field def buildUtils= loadScript(new File("utilities.groovy"))
 
-//Create SAMPLE.TRANFILE , SAMPLE.CUSTFILE
+hlq        = "BURGESS.SAMPLE"
+sourceDir  = "/u/burgess/dbb/SAMApplication"
+
+def loadPDS = "${hlq}.LOAD"
+def custFile = "${hlq}.CUSTFILE"
+def tranFile = "${hlq}.TRANFILE"
+def custOut = "${hlq}.CUSTOUT"
+def custRpt = "${hlq}.CUSTRPT"
+
+def options = "cyl space(100,10) lrecl(80) dsorg(PO) recfm(F,B) blksize(32720) dsntype(library) msg(1) new"
+def custOutOptions = "cyl space(10,10) unit(sysda) dsorg(PS) recfm(V,B) lrecl(600) blksize(604) dnstype(library) new"
+def custRptOptions = "cyl space(10,10) unit(sysda) dsorg(PS) recfm(F,B) lrecl(133) blksize(0) dnstype(library) new"
+
+def tempOptions = "cyl space(5,5) unit(vio) new"
 
 
-// ------------------
-// Run the program
-// define the MVSExec command to link the file
-def run = new MVSExec().pgm("HELLO").parm("")
+// Clean up / delete leftover datasets (SAMPLE.CUSTRPT, SAMPLE.CUSTOUT)
+
+//Create SAMPLE.TRANFILE , SAMPLE.CUSTFILE, SAMPLE.CUSTRPT, SAMPLE.CUSTOUT
+
+// ****** RUN SAM 1 ******* //
+
+def run = new MVSExec().pgm("SAM1").parm("")
 //
 //// add DD statements to the MVSExec command
-run.dd(new DDStatement().name("TASKLIB").dsn("${loadPDS}($member)").options("shr"))
+run.dd(new DDStatement().name("TASKLIB").dsn(loadPDS).options("shr"))
 run.dd(new DDStatement().name("SYSOUT").options(tempOptions))
-run.dd(new DDStatement().name("SYSPRINT").options(tempOptions))// the important stuff
-File file = File.createTempFile("temp",".tmp")
-run.copy(new CopyToHFS().ddName("SYSOUT").file(file))
+run.dd(new DDStatement().name("SYSUDUMP").options(tempOptions))
+run.dd(new DDStatement().name("CUSTFILE").dsn(custFile).options(tempOptions)) //what about Options?
+run.dd(new DDStatement().name("TRANFILE").dsn(tranFile).options(tempOptions))
+run.dd(new DDStatement().name("CUSTOUT").dsn(custOut).options(custOptions))
+run.dd(new DDStatement().name("CUSTRPT").dsn(custRpt).options(custRptOptions))
 rc = run.execute()
 
 if (rc > 4){
@@ -28,6 +48,10 @@ else
     println("Program execution successful!  RC=$rc")
 
 
-println(file.text) //print temp file (contains output) to the terminal 
-
 //alocate execute copy free
+
+
+/*
+run.dd(new DDStatement().name("SYSPRINT").options(tempOptions))// the important stuff
+File file = File.createTempFile("temp",".tmp")
+run.copy(new CopyToHFS().ddName("SYSOUT").file(file)) */

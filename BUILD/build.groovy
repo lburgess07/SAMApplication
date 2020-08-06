@@ -1,6 +1,10 @@
+@groovy.transform.BaseScript com.ibm.dbb.groovy.ScriptLoader baseScript
 import com.ibm.dbb.build.*
 import com.ibm.dbb.repository.*
 import com.ibm.dbb.dependency.*
+import groovy.util.*
+import groovy.transform.* 
+//groovy.transform allows you to use @Field
 
 /*
 This build.groovy script should clean and create the following datasets: 
@@ -12,6 +16,7 @@ SAMPLE.COBCOPY
 Then it will copy source code & copybooks, and compile SAM1&2, and then link the executables
 */
 
+@Field def buildUtils= loadScript(new File("utilities.groovy"))
 
 hlq        = "BURGESS.SAMPLE"
 sourceDir  = "/u/burgess/dbb/SAMApplication"
@@ -43,30 +48,8 @@ def tempOptions = "cyl space(5,5) unit(vio) new"
 
 // ******* CREATE NEW DATASETS ********* //
 
-//Create source PDS dataset
-println("Creating ${srcPDS}. . .")
-CreatePDS createPDSCmd = new CreatePDS();
-createPDSCmd.setDataset(srcPDS);
-createPDSCmd.setOptions(options);
-createPDSCmd.create();
-
-//Create obj PDS dataset 
-println("Creating ${objPDS}. . .")
-createPDSCmd.setDataset(objPDS);
-createPDSCmd.setOptions(options);
-createPDSCmd.create();
-
-//Create copy PDS dataset
-println("Creating ${copyPDS}. . .")
-createPDSCmd.setDataset(copyPDS);
-createPDSCmd.setOptions(options);
-createPDSCmd.create();
-
-//Create load PDS dataset to hold the binary exec
-println("Creating ${loadPDS}. . .")
-createPDSCmd.setDataset(loadPDS);
-createPDSCmd.setOptions(loadOptions);
-createPDSCmd.create();
+def dataset_map =  ["$srcPDS":"$options", "$objPDS":"$options", "$loadPDS":"$loadOptions", "$copyPDS":"$options" ]
+buildUtils.createDatasets(dataset_map);
 
 /* ****** COPY SOURCE to appropriate DATASETS *******
  /COBOL/SAM1.cbl -> SAMPLE.COBOL(SAM1)
@@ -180,3 +163,10 @@ if (rc > 4){
 }
 else
     println("SAM 1 Link successful!  RC=$rc")
+
+
+
+
+
+/* METHOD DEFINITIONS */
+
