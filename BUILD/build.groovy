@@ -51,6 +51,7 @@ def tempOptions = "cyl space(5,5) unit(vio) new"
 def dataset_map =  ["$srcPDS":"$options", "$objPDS":"$options", "$loadPDS":"$loadOptions", "$copyPDS":"$options" ]
 buildUtils.createDatasets(dataset_map);
 
+//System.exit(0);
 /* ****** COPY SOURCE to appropriate DATASETS *******
  /COBOL/SAM1.cbl -> SAMPLE.COBOL(SAM1)
  /COBOL/SAM2.cbl -> SAMPLE.COBOL(SAM2)
@@ -62,7 +63,7 @@ def copy = new CopyToPDS().file(new File("${sourceDir}/COBOL/")).dataset(srcPDS)
 copy.execute()
 
 //Need to copy the copybook over into COBCOPY? 
-println("Copying the copybooks over . . .")
+println("Bringing the copybooks over . . .")
 copy = new CopyToPDS().file(new File("${sourceDir}/COPYBOOK/")).dataset(copyPDS)
 copy.execute()
 
