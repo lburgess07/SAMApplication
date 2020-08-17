@@ -36,7 +36,7 @@ def copySeq(def copy_map){ // map format should be "full path to file" : "datase
 		files_name.each { file -> 
 			dataset = copy_map.get(file) //pull corresponding dataset from map
 			dataset_format = "//'${dataset}'"
-			println("Copying ${file} to ${dataset_format}");
+			println("Copying ${file} to ${dataset}");
 
 			//execute 'cp' command:
 			String cmd = "cp -v ${file} ${dataset_format}"
@@ -52,9 +52,6 @@ def copySeq(def copy_map){ // map format should be "full path to file" : "datase
 				println("Copy success.")
 				//println(response)
 			} 
-				
-
 		}
 	}
-
 }

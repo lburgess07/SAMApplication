@@ -64,7 +64,7 @@ else
 
 println("** CUSTRPT DATASET OUTPUT **\n")
 println(cust_rpt.text)
-println("** CUSTOUT DATASET OUTPUT **\n")
-println(cust_out.text)
+//println("** CUSTOUT DATASET OUTPUT **\n")
+//println(cust_out.text)
 println("** PROGRAM SYSTEM OUTPUT **\n")
 println(sys_output.text)
