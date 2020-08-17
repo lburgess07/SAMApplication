@@ -46,12 +46,14 @@ def options = "cyl space(100,10) lrecl(80) dsorg(PO) recfm(F,B) blksize(32720) d
 def loadOptions = "cyl space(100,10) dsorg(PO) recfm(U) blksize(32720) dsntype(library) msg(1)"
 def tempOptions = "cyl space(5,5) unit(vio) new"
 
-// ******* CREATE NEW DATASETS ********* //
+// ******* CLEAN UP DATASETS ********* //
+String[] datasets_delete = ["$srcPDS", "$objPDS", "$loadPDS", "$copyPDS"]
+buildUtils.deleteDatasets(datasets_delete);
 
+// ******* CREATE NEW DATASETS ********* //
 def dataset_map =  ["$srcPDS":"$options", "$objPDS":"$options", "$loadPDS":"$loadOptions", "$copyPDS":"$options" ]
 buildUtils.createDatasets(dataset_map);
 
-//System.exit(0);
 /* ****** COPY SOURCE to appropriate DATASETS *******
  /COBOL/SAM1.cbl -> SAMPLE.COBOL(SAM1)
  /COBOL/SAM2.cbl -> SAMPLE.COBOL(SAM2)
@@ -72,18 +74,14 @@ copy.execute()
 // Compile SAM 2
 println("Compiling ${srcPDS} into member ${member2}. . .")
 def compile = new MVSExec().pgm("IGYCRCTL").parm("LIST,MAP,NODYN")
-//compile.dd(new DDStatement().name("STEPLIB").dsn("${compilerDS}").options("shr"))
 compile.dd(new DDStatement().name("TASKLIB").dsn("${compilerDS}").options("shr"))
 compile.dd(new DDStatement().name("SYSIN").dsn("${srcPDS}($member2)").options("shr"))
 compile.dd(new DDStatement().name("SYSLIB").dsn("${copyPDS}").options("shr")) //copybook .COBCOPY
 compile.dd(new DDStatement().name("SYSLIN").dsn("${objPDS}($member2)").options("shr"))
-
 (1..17).toList().each { num ->
 	compile.dd(new DDStatement().name("SYSUT$num").options(tempOptions))
 	   }
-
 compile.dd(new DDStatement().name("SYSMDECK").options(tempOptions))
-//compile.dd(new DDStatement().name("TASKLIB").dsn("${compilerDS}").options("shr"))
 compile.dd(new DDStatement().name("SYSPRINT").options(tempOptions))
 compile.copy(new CopyToHFS().ddName("SYSPRINT").file(new File("${sourceDir}/LOG/sam2_compile.log")))
 def rc = compile.execute()
@@ -103,11 +101,9 @@ compile.dd(new DDStatement().name("TASKLIB").dsn("${compilerDS}").options("shr")
 compile.dd(new DDStatement().name("SYSIN").dsn("${srcPDS}($member1)").options("shr"))
 compile.dd(new DDStatement().name("SYSLIB").dsn("${copyPDS}").options("shr"))
 compile.dd(new DDStatement().name("SYSLIN").dsn("${objPDS}($member1)").options("shr"))
-
 (1..17).toList().each { num ->
 	compile.dd(new DDStatement().name("SYSUT$num").options(tempOptions))
 	   }
-
 compile.dd(new DDStatement().name("SYSMDECK").options(tempOptions))
 compile.dd(new DDStatement().name("SYSPRINT").options(tempOptions))
 compile.copy(new CopyToHFS().ddName("SYSPRINT").file(new File("${sourceDir}/LOG/sam1_compile.log")))
@@ -164,10 +160,4 @@ if (rc > 4){
 }
 else
     println("SAM 1 Link successful!  RC=$rc")
-
-
-
-
-
-/* METHOD DEFINITIONS */
 
