@@ -7,7 +7,8 @@ import groovy.transform.*
 import com.ibm.jzos.FileFactory
 import com.ibm.jzos.ZFile
 
-//compilerDS = "IGY.V6R1M0.SIGYCOMP"
+// ***** METHOD DEFINITIONS ***** //
+
 /*
 * createDatasets - creates datasets accepting map parameter with format of DATASET_NAME:DATASET_OPTIONS
 */
@@ -36,11 +37,10 @@ def deleteDatasets(def datasets){
 }
 
 /*
-* copySeq - copies one or more USS files to seq MVS datasets, accepts map with format USS_FILE_PATH:DATASET_NAME
+* copySeq - copies one or more USS files to sequential datasets, accepts map with format USS_FILE_PATH:DATASET_NAME
 */
 def copySeq(Map copy_map){ // map format should be "full path to file" : "dataset name"
 	files_name = copy_map.keySet();
-	println "Copying files: ${files_name}"
 	if (files_name) {
 		files_name.each { file -> 
 			dataset = copy_map.get(file) //pull corresponding dataset from map
@@ -48,7 +48,7 @@ def copySeq(Map copy_map){ // map format should be "full path to file" : "datase
 			println("Copying ${file} to ${dataset}");
 
 			//initialize the copy command using USS 'cp' command
-			String cmd = "cp -v ${file} ${dataset_format}"
+			String cmd = "cp -v ${file} ${dataset_format}" //using -v to actually get a console response
 			StringBuffer response = new StringBuffer()
 			StringBuffer error = new StringBuffer()
 			
@@ -56,7 +56,7 @@ def copySeq(Map copy_map){ // map format should be "full path to file" : "datase
 			Process process = cmd.execute()
 			process.waitForProcessOutput(response, error)
 			if (error) {
-				println("*? Warning executing 'cp' shell command.\n command: $cmd \nerror: $error")	
+				println("*? Warning executing 'cp' shell command.\n command: $cmd \n error: $error")	
 			}
 			else if (response) {
 				println("Copy success.")
@@ -79,7 +79,6 @@ def printFile(File file){
 def compileProgram(String srcDS, String member, String compilerDS, String copyDS, String objectDS, String log_file){
 	def tempOptions = "cyl space(5,5) unit(vio) new"
 
-	println("Compiling ${srcDS} into member ${member}. . .")
 	def compile = new MVSExec().pgm("IGYCRCTL").parm("LIST,MAP,NODYN")
 	compile.dd(new DDStatement().name("TASKLIB").dsn("${compilerDS}").options("shr"))
 	compile.dd(new DDStatement().name("SYSIN").dsn("${srcDS}($member)").options("shr"))
@@ -91,6 +90,7 @@ def compileProgram(String srcDS, String member, String compilerDS, String copyDS
 	compile.dd(new DDStatement().name("SYSMDECK").options(tempOptions))
 	compile.dd(new DDStatement().name("SYSPRINT").options(tempOptions))
 	compile.copy(new CopyToHFS().ddName("SYSPRINT").file(new File(log_file)))
+	println("Compiling ${member} from source ${srcDS} to object ${objectDS}")
 	def rc = compile.execute()
 
 	if (rc > 4){

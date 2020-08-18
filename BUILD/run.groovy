@@ -27,7 +27,7 @@ String[] datasets_delete = ["$custFile", "$tranFile", "$custOut", "$custRpt"]
 runUtils.deleteDatasets(datasets_delete);
 
 // Create SAMPLE.TRANFILE , SAMPLE.CUSTFILE, SAMPLE.CUSTRPT, SAMPLE.CUSTOUT with appropriate options
-Map dataset_map = ["$tranFile":"$tranFileOptions","$custFile":"$custFileOptions", "$custOut":"$custOutOptions", "$custRpt":"$custRptOptions"]
+Map dataset_map = ["$tranFile":"$tranFileOptions", "$custFile":"$custFileOptions", "$custOut":"$custOutOptions", "$custRpt":"$custRptOptions"]
 runUtils.createDatasets(dataset_map);
 
 // Copy sample customer file and transaction file
