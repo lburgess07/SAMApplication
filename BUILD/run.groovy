@@ -36,6 +36,13 @@ runUtils.copySeq(copy_map)
 
 // ****** RUN SAM 1 ******* //
 
+// Initialize log files / output:
+File sys_output = new File("${sourceDir}/LOG/SAM1_sysout.log")
+File cust_out = new File("${sourceDir}/LOG/custout.txt")
+File cust_rpt = new File("${sourceDir}/LOG/custrpt.txt")
+File sys_dump = new File("${sourceDir}/LOG/SAM1_sysudump.log")
+
+// Initialize and configure 'run' MVSExec command
 def run = new MVSExec().pgm("SAM1").parm("")
 run.dd(new DDStatement().name("TASKLIB").dsn(loadPDS).options("shr"))
 run.dd(new DDStatement().name("SYSOUT").options(tempOptions))
@@ -44,10 +51,6 @@ run.dd(new DDStatement().name("CUSTFILE").dsn(custFile).options("shr"))
 run.dd(new DDStatement().name("TRANFILE").dsn(tranFile).options("shr"))
 run.dd(new DDStatement().name("CUSTOUT").dsn(custOut).options("shr"))
 run.dd(new DDStatement().name("CUSTRPT").dsn(custRpt).options("shr"))
-File sys_output = new File("${sourceDir}/LOG/SAM1_sysout.log")
-File cust_out = new File("${sourceDir}/LOG/custout.txt")
-File cust_rpt = new File("${sourceDir}/LOG/custrpt.txt")
-File sys_dump = new File("${sourceDir}/LOG/SAM1_sysudump.log")
 run.copy(new CopyToHFS().ddName("SYSOUT").file(sys_output))
 run.copy(new CopyToHFS().ddName("CUSTOUT").file(cust_out))
 run.copy(new CopyToHFS().ddName("CUSTRPT").file(cust_rpt))

@@ -4,7 +4,6 @@ import com.ibm.dbb.repository.*
 import com.ibm.dbb.dependency.*
 import groovy.util.*
 import groovy.transform.* 
-//groovy.transform allows you to use @Field
 
 /*
 This build.groovy script should clean and create the following datasets: 
@@ -13,7 +12,8 @@ SAMPLE.LOAD
 SAMPLE.COBOL (src)
 SAMPLE.COBCOPY
 
-Then it will copy source code & copybooks, and compile SAM1&2, and then link the executables
+Then it will copy source code & copybooks, and compile SAM1&2, and then link the executables.
+All buildUtils functions used in this script are definied in utilities.groovy
 */
 
 @Field def buildUtils= loadScript(new File("utilities.groovy"))
@@ -32,15 +32,19 @@ sam2link   = """
      NAME SAM2(R)
 """
 
-
 // DS Names
 def srcPDS = "${hlq}.COBOL" // src dataset
 def objPDS = "${hlq}.OBJ" // obj dataset
-def loadPDS = "${hlq}.LOAD" //load dataset (will contain the executable) 
+def loadPDS = "${hlq}.LOAD" //load dataset (will contain the executables) 
 def copyPDS = "${hlq}.COBCOPY"
 def member1 = "SAM1"
 def member2 = "SAM2"
 
+// Log Files
+String sam1_compile_log = "${sourceDir}/LOG/sam1_compile.log"
+String sam2_compile_log = "${sourceDir}/LOG/sam2_compile.log"
+String sam1_link_log    = "${sourceDir}/LOG/sam1_link.log"
+String sam2_link_log    = "${sourceDir}/LOG/sam2_link.log"
 // DS Options
 def options = "cyl space(100,10) lrecl(80) dsorg(PO) recfm(F,B) blksize(32720) dsntype(library) msg(1) new"
 def loadOptions = "cyl space(100,10) dsorg(PO) recfm(U) blksize(32720) dsntype(library) msg(1)"
@@ -54,110 +58,22 @@ buildUtils.deleteDatasets(datasets_delete);
 Map dataset_map =  ["$srcPDS":"$options", "$objPDS":"$options", "$loadPDS":"$loadOptions", "$copyPDS":"$options" ]
 buildUtils.createDatasets(dataset_map);
 
-/* ****** COPY SOURCE to appropriate DATASETS *******
- /COBOL/SAM1.cbl -> SAMPLE.COBOL(SAM1)
- /COBOL/SAM2.cbl -> SAMPLE.COBOL(SAM2)
-*/
+// ******* COPY SOURCE & COPYBOOKS FROM zFS to MVS ******* //
 
-//Copy SAM1
+//Copy SAM1 & SAM2 over into srcPDS (will be seperate members)
 println("Copying cobol source files . . .")
 def copy = new CopyToPDS().file(new File("${sourceDir}/COBOL/")).dataset(srcPDS)
 copy.execute()
 
-//Need to copy the copybook over into COBCOPY? 
+//Copy CUSTCOPY and TRANREC copybooks over into copyPDS
 println("Bringing the copybooks over . . .")
 copy = new CopyToPDS().file(new File("${sourceDir}/COPYBOOK/")).dataset(copyPDS)
 copy.execute()
 
-// ********* COMPILATION of SAM1 & SAM 2 ********** //
-
-// Compile SAM 2
-println("Compiling ${srcPDS} into member ${member2}. . .")
-def compile = new MVSExec().pgm("IGYCRCTL").parm("LIST,MAP,NODYN")
-compile.dd(new DDStatement().name("TASKLIB").dsn("${compilerDS}").options("shr"))
-compile.dd(new DDStatement().name("SYSIN").dsn("${srcPDS}($member2)").options("shr"))
-compile.dd(new DDStatement().name("SYSLIB").dsn("${copyPDS}").options("shr")) //copybook .COBCOPY
-compile.dd(new DDStatement().name("SYSLIN").dsn("${objPDS}($member2)").options("shr"))
-(1..17).toList().each { num ->
-	compile.dd(new DDStatement().name("SYSUT$num").options(tempOptions))
-	   }
-compile.dd(new DDStatement().name("SYSMDECK").options(tempOptions))
-compile.dd(new DDStatement().name("SYSPRINT").options(tempOptions))
-compile.copy(new CopyToHFS().ddName("SYSPRINT").file(new File("${sourceDir}/LOG/sam2_compile.log")))
-def rc = compile.execute()
-
-if (rc > 4){
-    println("SAM 2 Compile failed!  RC=$rc")
-    System.exit(rc)
-}
-else
-    println("SAM 2 Compile successful!  RC=$rc")
-
-
-// Compile SAM 1
-println("Compiling ${srcPDS} into member ${member1}. . .")
-compile = new MVSExec().pgm("IGYCRCTL").parm("LIST,MAP,NODYN")
-compile.dd(new DDStatement().name("TASKLIB").dsn("${compilerDS}").options("shr"))
-compile.dd(new DDStatement().name("SYSIN").dsn("${srcPDS}($member1)").options("shr"))
-compile.dd(new DDStatement().name("SYSLIB").dsn("${copyPDS}").options("shr"))
-compile.dd(new DDStatement().name("SYSLIN").dsn("${objPDS}($member1)").options("shr"))
-(1..17).toList().each { num ->
-	compile.dd(new DDStatement().name("SYSUT$num").options(tempOptions))
-	   }
-compile.dd(new DDStatement().name("SYSMDECK").options(tempOptions))
-compile.dd(new DDStatement().name("SYSPRINT").options(tempOptions))
-compile.copy(new CopyToHFS().ddName("SYSPRINT").file(new File("${sourceDir}/LOG/sam1_compile.log")))
-rc = compile.execute()
-
-if (rc > 4){
-    println("SAM 1 Compile failed!  RC=$rc")
-    System.exit(rc)
-}
-else
-    println("SAM 1 Compile successful!  RC=$rc")
-
+// ********* COMPILATION *********** //
+buildUtils.compileProgram(srcPDS, member2, compilerDS, copyPDS, objPDS, sam2_compile_log) //Compile SAM2
+buildUtils.compileProgram(srcPDS, member1, compilerDS, copyPDS, objPDS, sam1_compile_log) //Compile SAM1
 
 // ********* LINK PROGRAM *********  //
-
-
-//Link SAM2:
-println("Linking SAM2. . .")	
-def link = new MVSExec().pgm("IEWL").parm("")
-link.dd(new DDStatement().name("SYSLMOD").dsn(loadPDS).options("shr"))
-link.dd(new DDStatement().name("SYSUT1").options(tempOptions))
-link.dd(new DDStatement().name("OBJ").dsn(objPDS).options("shr"))
-link.dd(new DDStatement().name("SYSLIN").instreamData(sam2link)) 
-link.dd(new DDStatement().name("SYSLIB").dsn(linklib).options("shr"))
-link.dd(new DDStatement().dsn("SYS1.MACLIB").options("shr")) 
-link.dd(new DDStatement().name("SYSPRINT").options(tempOptions))
-link.copy(new CopyToHFS().ddName("SYSPRINT").file(new File("${sourceDir}/LOG/sam2_link.log")))
-rc = link.execute()
-
-if (rc > 4){
-    println("SAM 2 Link failed!  RC=$rc")
-    System.exit(rc)
-}
-else
-    println("SAM 2 Link successful!  RC=$rc")
-
-
-//Link SAM1:
-println("Linking SAM1. . .")	
-link = new MVSExec().pgm("IEWL").parm("")
-link.dd(new DDStatement().name("SYSLMOD").dsn(loadPDS).options("shr"))
-link.dd(new DDStatement().name("SYSUT1").options(tempOptions))
-link.dd(new DDStatement().name("OBJ").dsn(objPDS).options("shr"))
-link.dd(new DDStatement().name("SYSLIN").instreamData(sam1link))
-link.dd(new DDStatement().name("SYSLIB").dsn(linklib).options("shr"))
-link.dd(new DDStatement().dsn("SYS1.MACLIB").options("shr")) 
-link.dd(new DDStatement().name("SYSPRINT").options(tempOptions))
-link.copy(new CopyToHFS().ddName("SYSPRINT").file(new File("${sourceDir}/LOG/sam1_link.log")))
-rc = link.execute()
-
-if (rc > 4){
-    println("SAM 1 Link failed!  RC=$rc")
-    System.exit(rc)
-}
-else
-    println("SAM 1 Link successful!  RC=$rc")
-
+buildUtils.linkProgram(loadPDS, member2, objPDS, linklib, sam2link, sam2_link_log) //Link SAM2
+buildUtils.linkProgram(loadPDS, member1, objPDS, linklib, sam1link, sam1_link_log) //Link SAM1
