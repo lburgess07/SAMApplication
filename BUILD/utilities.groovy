@@ -7,7 +7,10 @@ import groovy.transform.*
 import com.ibm.jzos.FileFactory
 import com.ibm.jzos.ZFile
 
-def createDatasets(def datasets_map) {
+/*
+* createDatasets - creates datasets accepting map parameter with format of DATASET_NAME:DATASET_OPTIONS
+*/
+def createDatasets(Map datasets_map) {
     datasets_name = datasets_map.keySet(); //get array of datasets to create
 	println "** Creating datasets: ${datasets_name}"
 	if (datasets_name) {
@@ -19,8 +22,11 @@ def createDatasets(def datasets_map) {
 }
 
 
-
-def deleteDatasets(String[] datasets){
+/*
+* deleteDatasets - deletes one or more datasets, accepts an array of dataset name strings to delete
+				   Checks if a provided dataset exists, and if so, deletes it.
+*/
+def deleteDatasets(def datasets){
 	datasets.each { dataset ->
 		if (ZFile.dsExists("//'$dataset'")){
 			println("Removing ${dataset}. . .")
@@ -29,24 +35,28 @@ def deleteDatasets(String[] datasets){
 	}
 }
 
-def copySeq(def copy_map){ // map format should be "full path to file" : "dataset name"
+/*
+* copySeq - copies one or more USS files to seq MVS datasets, accepts map with format USS_FILE_PATH:DATASET_NAME
+*/
+def copySeq(Map copy_map){ // map format should be "full path to file" : "dataset name"
 	files_name = copy_map.keySet();
 	println "** Copying files: ${files_name}"
 	if (files_name) {
 		files_name.each { file -> 
 			dataset = copy_map.get(file) //pull corresponding dataset from map
-			dataset_format = "//'${dataset}'"
+			dataset_format = "//'${dataset}'" //adding '//' signifies destination is a MVS dataset
 			println("Copying ${file} to ${dataset}");
 
-			//execute 'cp' command:
+			//initialize the copy command using USS 'cp' command
 			String cmd = "cp -v ${file} ${dataset_format}"
 			StringBuffer response = new StringBuffer()
 			StringBuffer error = new StringBuffer()
 			
+			//execute command and process output
 			Process process = cmd.execute()
 			process.waitForProcessOutput(response, error)
 			if (error) {
-				println("*? Warning executing ls. command: $cmd \nerror: $error")	
+				println("*? Warning executing 'cp' shell command.\n command: $cmd \nerror: $error")	
 			}
 			else if (response) {
 				println("Copy success.")
@@ -54,4 +64,9 @@ def copySeq(def copy_map){ // map format should be "full path to file" : "datase
 			} 
 		}
 	}
+}
+
+
+def printFile(File file){
+	println(file.text)
 }

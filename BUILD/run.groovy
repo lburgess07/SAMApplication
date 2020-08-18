@@ -5,7 +5,7 @@ import com.ibm.dbb.dependency.*
 import groovy.util.*
 import groovy.transform.* 
 
-@Field def buildUtils= loadScript(new File("utilities.groovy"))
+@Field def runUtils= loadScript(new File("utilities.groovy"))
 
 hlq        = "BURGESS.SAMPLE"
 sourceDir  = "/u/burgess/dbb/SAMApplication"
@@ -24,15 +24,15 @@ def tempOptions     = "cyl space(5,5) unit(vio) new"
 
 // Clean up / delete previous datasets
 String[] datasets_delete = ["$custFile", "$tranFile", "$custOut", "$custRpt"]
-buildUtils.deleteDatasets(datasets_delete);
+runUtils.deleteDatasets(datasets_delete);
 
 // Create SAMPLE.TRANFILE , SAMPLE.CUSTFILE, SAMPLE.CUSTRPT, SAMPLE.CUSTOUT with appropriate options
-def dataset_map = ["$tranFile":"$tranFileOptions","$custFile":"$custFileOptions", "$custOut":"$custOutOptions", "$custRpt":"$custRptOptions"]
-buildUtils.createDatasets(dataset_map);
+Map dataset_map = ["$tranFile":"$tranFileOptions","$custFile":"$custFileOptions", "$custOut":"$custOutOptions", "$custRpt":"$custRptOptions"]
+runUtils.createDatasets(dataset_map);
 
 // Copy sample customer file and transaction file
-def copy_map = ["${sourceDir}/RESOURCES/custfile.txt":"${custFile}", "${sourceDir}/RESOURCES/tranfile.txt":"$tranFile"];
-buildUtils.copySeq(copy_map)
+Map copy_map = ["${sourceDir}/RESOURCES/custfile.txt":"${custFile}", "${sourceDir}/RESOURCES/tranfile.txt":"$tranFile"];
+runUtils.copySeq(copy_map)
 
 // ****** RUN SAM 1 ******* //
 
@@ -62,9 +62,5 @@ if (rc > 4){
 else
     println("Program execution successful!  RC=$rc \n")
 
-println("** CUSTRPT DATASET OUTPUT **\n")
-println(cust_rpt.text)
-//println("** CUSTOUT DATASET OUTPUT **\n")
-//println(cust_out.text)
-println("** PROGRAM SYSTEM OUTPUT **\n")
-println(sys_output.text)
+println("** CUSTRPT DATASET OUTPUT **")
+runUtils.printFile(cust_rpt)

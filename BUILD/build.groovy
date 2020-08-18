@@ -51,7 +51,7 @@ String[] datasets_delete = ["$srcPDS", "$objPDS", "$loadPDS", "$copyPDS"]
 buildUtils.deleteDatasets(datasets_delete);
 
 // ******* CREATE NEW DATASETS ********* //
-def dataset_map =  ["$srcPDS":"$options", "$objPDS":"$options", "$loadPDS":"$loadOptions", "$copyPDS":"$options" ]
+Map dataset_map =  ["$srcPDS":"$options", "$objPDS":"$options", "$loadPDS":"$loadOptions", "$copyPDS":"$options" ]
 buildUtils.createDatasets(dataset_map);
 
 /* ****** COPY SOURCE to appropriate DATASETS *******
