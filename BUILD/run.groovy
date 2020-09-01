@@ -24,11 +24,11 @@ def tempOptions     = "cyl space(5,5) unit(vio) new"
 
 // Clean up / delete previous datasets
 String[] datasets_delete = ["$custFile", "$tranFile", "$custOut", "$custRpt"]
-runUtils.deleteDatasets(datasets_delete);
+runUtils.deleteDatasets(datasets_delete)
 
 // Create SAMPLE.TRANFILE , SAMPLE.CUSTFILE, SAMPLE.CUSTRPT, SAMPLE.CUSTOUT with appropriate options
 Map dataset_map = ["$tranFile":"$tranFileOptions", "$custFile":"$custFileOptions", "$custOut":"$custOutOptions", "$custRpt":"$custRptOptions"]
-runUtils.createDatasets(dataset_map);
+runUtils.createDatasets(dataset_map)
 
 // Copy sample customer file and transaction file
 Map copy_map = ["${sourceDir}/RESOURCES/custfile.txt":"${custFile}", "${sourceDir}/RESOURCES/tranfile.txt":"$tranFile"];
@@ -55,6 +55,7 @@ run.copy(new CopyToHFS().ddName("SYSOUT").file(sys_output))
 run.copy(new CopyToHFS().ddName("CUSTOUT").file(cust_out))
 run.copy(new CopyToHFS().ddName("CUSTRPT").file(cust_rpt))
 run.copy(new CopyToHFS().ddName("SYSUDUMP").file(sys_dump))
+
 println("** Running SAM1")
 def rc = run.execute()
 

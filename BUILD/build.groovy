@@ -19,7 +19,7 @@ All buildUtils functions used in this script are definied in utilities.groovy
 @Field def buildUtils= loadScript(new File("utilities.groovy"))
 
 hlq        = "BURGESS.SAMPLE"
-sourceDir  = "/u/burgess/dbb/SAMApplication"
+sourceDir  = "/u/burgess/dbb/SAMApplication" // set automatically
 compilerDS = "IGY.V6R1M0.SIGYCOMP"
 linklib    = "CEE.SCEELKED"
 sam1link   = """  
@@ -48,7 +48,6 @@ String sam2_link_log    = "${sourceDir}/LOG/sam2_link.log"
 // DS Options
 def options = "cyl space(100,10) lrecl(80) dsorg(PO) recfm(F,B) blksize(32720) dsntype(library) msg(1) new"
 def loadOptions = "cyl space(100,10) dsorg(PO) recfm(U) blksize(32720) dsntype(library) msg(1)"
-def tempOptions = "cyl space(5,5) unit(vio) new"
 
 // ******* CLEAN UP DATASETS ********* //
 String[] datasets_delete = ["$srcPDS", "$objPDS", "$loadPDS", "$copyPDS"]
