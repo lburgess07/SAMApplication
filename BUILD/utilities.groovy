@@ -45,7 +45,7 @@ def copySeq(Map copy_map){ // map format should be "full path to file" : "datase
 		files_name.each { file -> 
 			dataset = copy_map.get(file) //pull corresponding dataset from map
 			dataset_format = "//'${dataset}'" //adding '//' signifies destination is a MVS dataset
-			println("Copying ${file} to ${dataset}");
+			println("COPY: ${file} -> ${dataset}. . .");
 
 			//initialize the copy command using USS 'cp' command
 			String cmd = "cp -v ${file} ${dataset_format}" //using -v to actually get a console response
@@ -59,8 +59,35 @@ def copySeq(Map copy_map){ // map format should be "full path to file" : "datase
 				println("*? Warning executing 'cp' shell command.\n command: $cmd \n error: $error")	
 			}
 			else if (response) {
-				println("Copy success.")
+				//println("Copy success.")
 				//println(response)
+			} 
+		}
+	}
+}
+
+//copy sequential datasets to HFS (text) files
+def copySeqtoHFS(Map copy_map){ // map format should be "full path to file" : "dataset name"
+	files_name = copy_map.keySet();
+	if (files_name) {
+		files_name.each { file -> 
+			dataset = copy_map.get(file) //pull corresponding dataset from map
+			dataset_format = "//'${dataset}'" //adding '//' signifies destination is a MVS dataset
+			println("COPY: ${dataset} -> ${file}. . .");
+
+			//initialize the copy command using USS 'cp' command
+			String cmd = "cp -v ${dataset_format} ${file}" //using -v to actually get a console response
+			StringBuffer response = new StringBuffer()
+			StringBuffer error = new StringBuffer()
+			
+			//execute command and process output
+			Process process = cmd.execute()
+			process.waitForProcessOutput(response, error)
+			if (error) {
+				println("*? Warning executing 'cp' shell command.\n command: $cmd \n error: $error")	
+			}
+			else if (response) {
+				//println("Copy success.")
 			} 
 		}
 	}

@@ -18,16 +18,14 @@ def custRpt     = "${hlq}.CUSTRPT"
 
 def tranFileOptions = "tracks space(100,10) lrecl(80) dsorg(PS) recfm(F,B) blksize(32720) new"
 def custFileOptions = "tracks space(100,10) dsorg(PS) recfm(V,B) lrecl(600) blksize(604) new"
-def custOutOptions  = "tracks space(10,10) unit(SYSDA) dsorg(PS) recfm(V,B) lrecl(600) blksize(604) new"
-def custRptOptions  = "tracks space(10,10) unit(SYSDA) dsorg(PS) recfm(F,B) lrecl(133) blksize(0) new"
 def tempOptions     = "cyl space(5,5) unit(vio) new"
 
 // Clean up / delete previous datasets
-String[] datasets_delete = ["$custFile", "$tranFile", "$custOut", "$custRpt"]
+String[] datasets_delete = ["$custFile", "$tranFile"]
 runUtils.deleteDatasets(datasets_delete)
 
 // Create SAMPLE.TRANFILE , SAMPLE.CUSTFILE, SAMPLE.CUSTRPT, SAMPLE.CUSTOUT with appropriate options
-Map dataset_map = ["$tranFile":"$tranFileOptions", "$custFile":"$custFileOptions", "$custOut":"$custOutOptions", "$custRpt":"$custRptOptions"]
+Map dataset_map = ["$tranFile":"$tranFileOptions", "$custFile":"$custFileOptions"]
 runUtils.createDatasets(dataset_map)
 
 // Copy sample customer file and transaction file
@@ -37,34 +35,34 @@ runUtils.copySeq(copy_map)
 // ****** RUN SAM 1 ******* //
 
 // Initialize log files / output:
-File sys_output = new File("${sourceDir}/LOG/SAM1_sysout.log")
-File cust_out = new File("${sourceDir}/LOG/custout.txt")
-File cust_rpt = new File("${sourceDir}/LOG/custrpt.txt")
-File sys_dump = new File("${sourceDir}/LOG/SAM1_sysudump.log")
+File sys_output = new File("${sourceDir}/LOG/sysout.txt")
+def custOut_path = "${sourceDir}/LOG/custout.txt"
+def custRpt_path = "${sourceDir}/LOG/custrpt.txt"
 
-// Initialize and configure 'run' MVSExec command
-def run = new MVSExec().pgm("SAM1").parm("")
-run.dd(new DDStatement().name("TASKLIB").dsn(loadPDS).options("shr"))
-run.dd(new DDStatement().name("SYSOUT").options(tempOptions))
-run.dd(new DDStatement().name("SYSUDUMP").options(tempOptions))
-run.dd(new DDStatement().name("CUSTFILE").dsn(custFile).options("shr")) 
-run.dd(new DDStatement().name("TRANFILE").dsn(tranFile).options("shr"))
-run.dd(new DDStatement().name("CUSTOUT").dsn(custOut).options("shr"))
-run.dd(new DDStatement().name("CUSTRPT").dsn(custRpt).options("shr"))
-run.copy(new CopyToHFS().ddName("SYSOUT").file(sys_output))
-run.copy(new CopyToHFS().ddName("CUSTOUT").file(cust_out))
-run.copy(new CopyToHFS().ddName("CUSTRPT").file(cust_rpt))
-run.copy(new CopyToHFS().ddName("SYSUDUMP").file(sys_dump))
+def run_jcl = "${sourceDir}/BUILD/run.jcl" //JCL file
+def sysprint_file = "${sourceDir}/LOG/sysprint.out"
 
-println("** Running SAM1")
-def rc = run.execute()
+// Execute JCL from file on HFS
+JCLExec jclExec = new JCLExec()
+println("** Executing JCL **")
+jclExec.file(new File(run_jcl)).execute()
 
-if (rc > 4){
-    println("Program execution failed!  RC=$rc \n")
-    System.exit(rc)
-}
+// Get Job data
+def maxRC = jclExec.getMaxRC()
+def jobID = jclExec.getSubmittedJobId()
+def jobName = jclExec.getSubmittedJobName()
+
+if (maxRC == "CC 0000")
+    printf("** Execution Success. ** \n RC: ${maxRC} \n jobID: ${jobID} \n jobName: ${jobName} \n")
 else
-    println("Program execution successful!  RC=$rc \n")
+    printf("** Execution Failure. ** \n RC: ${maxRC} \n jobID: ${jobID} \n jobName: ${jobName} \n")
 
-println("** CUSTRPT DATASET OUTPUT **")
-runUtils.printFile(cust_rpt)
+// Save JCL Exec SYSOUT to sys_output file
+jclExec.saveOutput('SYSOUT', sys_output)
+
+// Copy output Datasetsto HFS:
+copy_map = ["${custOut_path}":"${custOut}", "${custRpt_path}": "${custRpt}"]
+runUtils.copySeqtoHFS(copy_map)
+
+printf("\n** ${custRpt} or ${custRpt_path} **\n")
+runUtils.printFile(new File(custRpt_path))
