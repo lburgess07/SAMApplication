@@ -18,7 +18,7 @@ All buildUtils functions used in this script are definied in utilities.groovy
 
 @Field def buildUtils= loadScript(new File("utilities.groovy"))
 
-hlq        = "BURGESS.SAMPLE"
+hlq        = "BURGESS"
 sourceDir  = "/u/burgess/dbb/SAMApplication" // set automatically
 compilerDS = "IGY.V6R1M0.SIGYCOMP"
 linklib    = "CEE.SCEELKED"
@@ -33,10 +33,10 @@ sam2link   = """
 """
 
 // DS Names
-def srcPDS = "${hlq}.COBOL" // src dataset
-def objPDS = "${hlq}.OBJ" // obj dataset
-def loadPDS = "${hlq}.LOAD" //load dataset (will contain the executables) 
-def copyPDS = "${hlq}.COBCOPY"
+def srcPDS = "${hlq}.SAMPLE.COBOL" // src dataset
+def objPDS = "${hlq}.SAMPLE.OBJ" // obj dataset
+def loadPDS = "${hlq}.SAMPLE.LOAD" //load dataset (will contain the executables) 
+def copyPDS = "${hlq}.SAMPLE.COBCOPY"
 def member1 = "SAM1"
 def member2 = "SAM2"
 
@@ -45,6 +45,7 @@ String sam1_compile_log = "${sourceDir}/LOG/sam1_compile.log"
 String sam2_compile_log = "${sourceDir}/LOG/sam2_compile.log"
 String sam1_link_log    = "${sourceDir}/LOG/sam1_link.log"
 String sam2_link_log    = "${sourceDir}/LOG/sam2_link.log"
+
 // DS Options
 def options = "cyl space(100,10) lrecl(80) dsorg(PO) recfm(F,B) blksize(32720) dsntype(library) msg(1) new"
 def loadOptions = "cyl space(100,10) dsorg(PO) recfm(U) blksize(32720) dsntype(library) msg(1)"
