@@ -30,7 +30,7 @@ def createDatasets(Map datasets_map) {
 def deleteDatasets(def datasets){
 	datasets.each { dataset ->
 		if (ZFile.dsExists("//'$dataset'")){
-			println("Removing ${dataset}. . .")
+			println("DELETE: ${dataset}. . .")
 			ZFile.remove("//'$dataset'")
 			}
 	}
@@ -57,16 +57,19 @@ def copySeq(Map copy_map){ // map format should be "full path to file" : "datase
 			process.waitForProcessOutput(response, error)
 			if (error) {
 				println("*? Warning executing 'cp' shell command.\n command: $cmd \n error: $error")	
+				return(1)
 			}
 			else if (response) {
-				//println("Copy success.")
 				//println(response)
+				return(0)
 			} 
 		}
 	}
 }
 
-//copy sequential datasets to HFS (text) files
+/*
+* copySeqtoHFS - copies one or more sequential dataset to HFS files, accepts map with format USS_FILE_PATH:DATASET_NAME
+*/
 def copySeqtoHFS(Map copy_map){ // map format should be "full path to file" : "dataset name"
 	files_name = copy_map.keySet();
 	if (files_name) {
@@ -84,10 +87,11 @@ def copySeqtoHFS(Map copy_map){ // map format should be "full path to file" : "d
 			Process process = cmd.execute()
 			process.waitForProcessOutput(response, error)
 			if (error) {
-				println("*? Warning executing 'cp' shell command.\n command: $cmd \n error: $error")	
+				println("*? Warning executing 'cp' shell command.\n command: $cmd \n error: $error")
+				return(1)	
 			}
 			else if (response) {
-				//println("Copy success.")
+				return(0)
 			} 
 		}
 	}
