@@ -14,7 +14,7 @@ import com.ibm.jzos.ZFile
 */
 def createDatasets(Map datasets_map) {
     datasets_name = datasets_map.keySet(); //get array of datasets to create
-	println "Creating datasets: ${datasets_name}"
+	println "CREATE: ${datasets_name}"
 	if (datasets_name) {
 		datasets_name.each { dataset ->
             options = datasets_map.get(dataset) //pull corresponding dataset options from map using $dataset as key
@@ -97,13 +97,6 @@ def copySeqtoHFS(Map copy_map){ // map format should be "full path to file" : "d
 	}
 }
 
-/* 
-* printFile - prints a provided file as text to the console
-*/
-def printFile(File file){
-	println(file.text)
-}
-
 /*
 * compileProgram - compiles a program 
 */
@@ -121,15 +114,15 @@ def compileProgram(String srcDS, String member, String compilerDS, String copyDS
 	compile.dd(new DDStatement().name("SYSMDECK").options(tempOptions))
 	compile.dd(new DDStatement().name("SYSPRINT").options(tempOptions))
 	compile.copy(new CopyToHFS().ddName("SYSPRINT").file(new File(log_file)))
-	println("Compiling ${member} from source ${srcDS} to object ${objectDS}")
+	println("COMPILE: ${srcDS}:${member} -> ${objectDS}:${member}")
 	def rc = compile.execute()
 
 	if (rc > 4){
-		println("${member} Compile failed!  RC=$rc")
+		println(" ${member} Compile failed!  RC=$rc")
 		System.exit(rc)
 	}
 	else
-		println("${member} Compile successful!  RC=$rc")
+		println(" ${member} Compile successful!  RC=$rc")
 
 	return(rc)
 }
@@ -140,7 +133,6 @@ def compileProgram(String srcDS, String member, String compilerDS, String copyDS
 def linkProgram(String loadDS, String member, String objectDS, String linklibDS, String link_card, String log_file){
 	def tempOptions = "cyl space(5,5) unit(vio) new"
 
-	println("Linking ${member}. . .")	
 	def link = new MVSExec().pgm("IEWL").parm("")
 	link.dd(new DDStatement().name("SYSLMOD").dsn(loadDS).options("shr"))
 	link.dd(new DDStatement().name("SYSUT1").options(tempOptions))
@@ -150,14 +142,15 @@ def linkProgram(String loadDS, String member, String objectDS, String linklibDS,
 	link.dd(new DDStatement().dsn("SYS1.MACLIB").options("shr")) 
 	link.dd(new DDStatement().name("SYSPRINT").options(tempOptions))
 	link.copy(new CopyToHFS().ddName("SYSPRINT").file(new File(log_file)))
+	println("LINK: ${objectDS}:${member} -> ${loadDS}:${member}")
 	def rc = link.execute()
 
 	if (rc > 4){
-		println("${member} Link failed!  RC=$rc")
+		println(" ${member} Link failed!  RC=$rc")
 		System.exit(rc)
 	}
 	else
-		println("${member} Link successful!  RC=$rc")
+		println(" ${member} Link successful!  RC=$rc")
 
 	return(rc)
 

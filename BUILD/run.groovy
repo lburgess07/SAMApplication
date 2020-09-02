@@ -73,4 +73,4 @@ runUtils.copySeqtoHFS(copy_map)
 
 //Print custRpt to the console
 printf("\n** ${custRpt} or ${custRpt_path} **\n")
-runUtils.printFile(new File(custRpt_path))
+println(new File(custRpt_path).text)
