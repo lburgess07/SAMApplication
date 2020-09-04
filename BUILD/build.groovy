@@ -61,12 +61,12 @@ buildUtils.createDatasets(dataset_map);
 // ******* COPY SOURCE & COPYBOOKS FROM zFS to MVS ******* //
 
 //Copy SAM1 & SAM2 over into srcPDS (will be seperate members)
-println("Copying cobol source files . . .")
+println("COPY: cobol source files . . .")
 def copy = new CopyToPDS().file(new File("${sourceDir}/COBOL/")).dataset(srcPDS)
 copy.execute()
 
 //Copy CUSTCOPY and TRANREC copybooks over into copyPDS
-println("Bringing the copybooks over . . .")
+println("COPY: Bringing the copybooks over . . .")
 copy = new CopyToPDS().file(new File("${sourceDir}/COPYBOOK/")).dataset(copyPDS)
 copy.execute()
 

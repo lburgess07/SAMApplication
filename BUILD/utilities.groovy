@@ -39,13 +39,13 @@ def deleteDatasets(def datasets){
 /*
 * copySeq - copies one or more USS files to sequential datasets, accepts map with format USS_FILE_PATH:DATASET_NAME
 */
-def copySeq(Map copy_map){ // map format should be "full path to file" : "dataset name"
+def copyHFStoSeq(Map copy_map){ // map format should be "full path to file" : "dataset name"
 	files_name = copy_map.keySet();
 	if (files_name) {
 		files_name.each { file -> 
 			dataset = copy_map.get(file) //pull corresponding dataset from map
 			dataset_format = "//'${dataset}'" //adding '//' signifies destination is a MVS dataset
-			println("COPY: ${file} -> ${dataset}. . .");
+			println("COPY: ${file} -> ${dataset} (sequential). . .");
 
 			//initialize the copy command using USS 'cp' command
 			String cmd = "cp -v ${file} ${dataset_format}" //using -v to actually get a console response
@@ -76,7 +76,7 @@ def copySeqtoHFS(Map copy_map){ // map format should be "full path to file" : "d
 		files_name.each { file -> 
 			dataset = copy_map.get(file) //pull corresponding dataset from map
 			dataset_format = "//'${dataset}'" //adding '//' signifies destination is a MVS dataset
-			println("COPY: ${dataset} -> ${file}. . .");
+			println("COPY: ${dataset} (sequential) -> ${file}. . .");
 
 			//initialize the copy command using USS 'cp' command
 			String cmd = "cp -v ${dataset_format} ${file}" //using -v to actually get a console response
