@@ -19,19 +19,20 @@ All tools functions used in this script are definied in utilities.groovy
 
 @Field def tools = loadScript(new File("utilities.groovy"))
 
+/*
 hlq        = "BURGESS"
 sourceDir  = "/u/burgess/dbb/SAMApplication" // set automatically
 compilerDS = "IGY.V6R1M0.SIGYCOMP"
 linklib    = "CEE.SCEELKED"
-sam1link   = """  
-     INCLUDE OBJ(SAM1)
-     ENTRY SAM1
-     NAME SAM1(R)
-"""
-sam2link   = """  
-     INCLUDE OBJ(SAM2)
-     NAME SAM2(R)
-"""
+
+
+srcPDS = "${hlq}.SAMPLE.COBOL" // src dataset
+objPDS = "${hlq}.SAMPLE.OBJ" // obj dataset
+loadPDS = "${hlq}.SAMPLE.LOAD" //load dataset (will contain the executables) 
+copyPDS = "${hlq}.SAMPLE.COBCOPY"
+member1 = "SAM1"
+member2 = "SAM2"
+*/
 
 // DS Names
 def srcPDS = "${hlq}.SAMPLE.COBOL" // src dataset
