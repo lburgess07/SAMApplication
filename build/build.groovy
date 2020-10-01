@@ -32,7 +32,7 @@ loadPDS = "${hlq}.SAMPLE.LOAD" //load dataset (will contain the executables)
 copyPDS = "${hlq}.SAMPLE.COBCOPY"
 member1 = "SAM1"
 member2 = "SAM2"
-*/
+
 
 // DS Names
 def srcPDS = "${hlq}.SAMPLE.COBOL" // src dataset
@@ -42,11 +42,13 @@ def copyPDS = "${hlq}.SAMPLE.COBCOPY"
 def member1 = "SAM1"
 def member2 = "SAM2"
 
-// Log Files
+// Log Files (not moved into build.properties)
 String sam1_compile_log = "${sourceDir}/log/sam1_compile.log"
 String sam2_compile_log = "${sourceDir}/log/sam2_compile.log"
 String sam1_link_log    = "${sourceDir}/log/sam1_link.log"
 String sam2_link_log    = "${sourceDir}/log/sam2_link.log"
+
+*/
 
 // DS Options
 def options = "cyl space(100,10) lrecl(80) dsorg(PO) recfm(F,B) blksize(32720) dsntype(library) msg(1) new"
@@ -79,107 +81,95 @@ println("** Build start at $properties.startTime")
 new File(properties.workDir).mkdirs()
 println("** Build output will be in $properties.workDir")
 
-
-// clean up dataset (maybe I shouldn't be doing this? - ask Dan
-String[] datasets_delete = ["$srcPDS", "$objPDS", "$loadPDS", "$copyPDS"]
-tools.deleteDatasets(datasets_delete);
+if (opts.C){
+     // clean up all build datasets, delete any datasets that already exist
+     String[] datasets_delete = ["$srcPDS", "$objPDS", "$loadPDS", "$copyPDS"]
+     tools.deleteDatasets(datasets_delete);
+}
 
 // create new datasets
 Map dataset_map =  ["$srcPDS":"$options", "$objPDS":"$options", "$loadPDS":"$loadOptions", "$copyPDS":"$options" ]
 tools.createDatasets(dataset_map);
 
-def buildList
-def incremental = false
+String[] buildList
 
-if (opts.arguments()) {
-     buildList = tools.getBuildList(opts.arguments())
+if (opts.f) { //full build
+
+     //Copy all files (provide map of relative file or directory paths, and the destination dataset names)
+     Map copy_hash = ["cobol/":"${properties.srcPDS}","copybook/":"${properties.copyPDS}"]
+     copy_files(copy_hash)
+
+     // since full build, we will build all programs (SAM1 & SAM2) apart of the SAM application
+     buildList = ["${properties.member1}","${properties.member2}"]
+
+
 }
-//incremental build of full build
-else {
-     //get last successful build's buildHash
+else if (opts.i) { //incremental build
 
+}
+else if (opts.u){ //user build
 
 
 }
-
-// scan all the files in the process list for dependency data (team build only)
-if (!incremental) {
-	if (!properties.userBuild && buildList.size() > 0) { 
-		// create collection if needed
-		def repositoryClient = tools.getDefaultRepositoryClient()
-		if (!repositoryClient.collectionExists(properties.collection))
-			repositoryClient.createCollection(properties.collection) 
-			
-		println("** Scan the build list to collect dependency data")
-		def scanner = new DependencyScanner()
-		def logicalFiles = [] as List<LogicalFile>
-		
-		buildList.each { file ->
-			// ignore whitespace files
-			if (file.isAllWhitespace())
-				return // only applies to local function
-			// scan file
-			println("Scanning $file")
-			def logicalFile = scanner.scan(file, properties.sourceDir)
-			// add file to logical file list
-			logicalFiles.add(logicalFile)
-			
-			if (logicalFiles.size() == 500) {
-				println("** Storing ${logicalFiles.size()} logical files in repository collection '$properties.collection'")
-				repositoryClient.saveLogicalFiles(properties.collection, logicalFiles);
-				println(repositoryClient.getLastStatus())  
-				logicalFiles.clear() 		
-			}
-		}
-
-		println("** Storing remaining ${logicalFiles.size()} logical files in repository collection '$properties.collection'")
-		repositoryClient.saveLogicalFiles(properties.collection, logicalFiles);
-		println(repositoryClient.getLastStatus())
-	}
+else { //no build option provided, halt build
+     println("**** No Build Option Provided, Exiting... *****")
+     System.exit(1)
 }
+
+// Build the programs contained in the buildList
+rc = build(buildList)
+
+if (rc){
+     println("There was an error building programs.")
+     System.exit(1)
+}
+else
+     println("Build Completed")
+     
+return 0;
+
+
 
 // **** Method Definitions: ******** //
-def full_build {
+def build(String[] programs){
 
-     /*
-     // ******* CLEAN UP DATASETS ********* //
-     String[] datasets_delete = ["$srcPDS", "$objPDS", "$loadPDS", "$copyPDS"]
-     tools.deleteDatasets(datasets_delete);
+     if (programs){
+          
+          //Compile list of provided programs
+          def rc = tools.compile_programs(programs)
 
-     // ******* CREATE NEW DATASETS ********* //
-     Map dataset_map =  ["$srcPDS":"$options", "$objPDS":"$options", "$loadPDS":"$loadOptions", "$copyPDS":"$options" ]
-     tools.createDatasets(dataset_map);
+          if (rc){
+               return(rc);
+          }
 
-     */
+          //Link provided programs
+          rc = tools.link_programs(programs)
 
-     // ******* COPY SOURCE & COPYBOOKS FROM zFS to MVS ******* //
+          if (rc)
+               return(rc);
+          
+          return(0); //compiled and linked successfully, return 0
+     }
 
-     //Copy SAM1 & SAM2 over into srcPDS (will be seperate members)
-     println("COPY: Cobol Source (HFS) -> ${srcPDS}")
-     def copy = new CopyToPDS().file(new File("${sourceDir}/cobol/")).dataset(srcPDS)
-     copy.execute()
-
-     //Copy CUSTCOPY and TRANREC copybooks over into copyPDS
-     println("COPY: ${sourceDir}/copybook/ -> ${copyPDS}")
-     copy = new CopyToPDS().file(new File("${sourceDir}/copybook/")).dataset(copyPDS)
-     copy.execute()
-
-     // ********* COMPILATION *********** //
-     tools.compileProgram(srcPDS, member2, compilerDS, copyPDS, objPDS, sam2_compile_log) //Compile SAM2
-     tools.compileProgram(srcPDS, member1, compilerDS, copyPDS, objPDS, sam1_compile_log) //Compile SAM1
-
-     // ********* LINK EDIT PROGRAM *********  //
-     tools.linkProgram(loadPDS, member2, objPDS, linklib, sam2link, sam2_link_log) //Link SAM2
-     tools.linkProgram(loadPDS, member1, objPDS, linklib, sam1link, sam1_link_log) //Link SAM1
+     return 1; //no programs provided, return 1
 
 }
 
-def user_build {
+def copy_files(Map copy_files) {
 
+     files = copy_files.keySet()
+     def sourceDir = properties.sourceDir
 
-}
-
-def incremental_build {
-
-
+     if (files){
+          files.each { file -> 
+               def dataset = copy_files.get(file) //retrieve dataset value from hash map
+              
+               println("COPY: ${file} -> ${srcPDS}")
+               def copy = new CopyToPDS().file(new File("${sourceDir}/${file}")).dataset(dataset)
+               if (copy.execute()) {
+                     println("An error occuried copying ${file}. ")
+                     System.exit(1)
+               }
+          }
+     }
 }

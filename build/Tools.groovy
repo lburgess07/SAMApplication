@@ -132,6 +132,7 @@ def compileProgram(String srcDS, String member, String compilerDS, String copyDS
 */
 def linkProgram(String loadDS, String member, String objectDS, String linklibDS, String link_card, String log_file){
 	def tempOptions = "cyl space(5,5) unit(vio) new"
+	link_card = get_linkCard(program)
 
 	def link = new MVSExec().pgm("IEWL").parm("")
 	link.dd(new DDStatement().name("SYSLMOD").dsn(loadDS).options("shr"))
@@ -156,19 +157,45 @@ def linkProgram(String loadDS, String member, String objectDS, String linklibDS,
 
 }
 
+/* Retreive Link Card */
+String get_linkCard(String program){
+
+	sam1link   = """  
+     INCLUDE OBJ(SAM1)
+     ENTRY SAM1
+     NAME SAM1(R)
+"""
+    sam2link   = """  
+     INCLUDE OBJ(SAM2)
+     NAME SAM2(R)
+"""
+	switch(program){
+		case "SAM1":
+			return sam1link;
+			break;
+		case "SAM2":
+			return sam2link;
+			break;
+		default:
+			break;
+	}
+
+}
+
 
 // ***** Incremental Build Definitions: ******* //
 def parseArgs(String[] cliArgs, String usage) {
 	def cli = new CliBuilder(usage: usage)
-	cli.s(longOpt:'sourceDir', args:1, argName:'dir', 'Absolute path to source directory')
-	cli.w(longOpt:'workDir', args:1, argName:'dir', 'Absolute path to the build output directory')
-	cli.q(longOpt:'hlq', args:1, argName:'hlq', 'High level qualifier for partition data sets')
+	cli.s(longOpt:'sourceDir', required: true, args:1, argName:'dir', 'Absolute path to source directory')
+	cli.w(longOpt:'workDir', required: true, args:1, argName:'dir', 'Absolute path to the build output directory')
+	cli.q(longOpt:'hlq', required: true, args:1, argName:'hlq', 'High level qualifier for partition data sets')
 	cli.c(longOpt:'collection', args:1, argName:'name', 'Name of the dependency data collection')
 	cli.u(longOpt:'userBuild', 'Flag indicating running a user build')
 	cli.h(longOpt:'help', 'Prints this message')
     cli.f(longOpt:'fullBuild', 'Flag indicating running a full build')
     cli.u(longOpt:'userBuild', 'Flag indicating running a user (single-file) build') //need to identify copybook
     cli.i(longOpt:'incrementalBuild', 'Flag indicating running an incremental/impact build')
+	cli.C(longOpt:'clean', 'Flag indicating whether to clean previous datasets')
     //cli.t(longOpt:'team', args:1, argName:'hlq', 'Team build hlq for user build syslib concatenations')
 	//cli.r(longOpt:'repo', args:1, argName:'url', 'DBB repository URL')
 	//cli.i(longOpt:'id', args:1, argName:'id', 'DBB repository id')
@@ -199,7 +226,7 @@ def loadProperties(OptionAccessor opts) {
 
 	// set command line arguments
 	if (opts.s) properties.sourceDir = opts.s
-	if (opts.w) properties.workDir = opts.w
+	if (opts.w) properties.workDir = opts.w //log file
 	if (opts.b) properties.buildHash = opts.b
 	if (opts.q) properties.hlq = opts.q
 	if (opts.c) properties.collection = opts.c
