@@ -217,7 +217,6 @@ def parseArgs(String[] cliArgs, String usage) {
     cli.u(longOpt:'userBuild', 'Flag indicating running a user (single-file) build') //need to identify copybook
     cli.i(longOpt:'incrementalBuild', 'Flag indicating running an incremental/impact build')
 	cli.C(longOpt:'clean', 'Flag indicating whether to clean previous datasets')
-    //cli.t(longOpt:'team', args:1, argName:'hlq', 'Team build hlq for user build syslib concatenations')
 	//cli.r(longOpt:'repo', args:1, argName:'url', 'DBB repository URL')
 	//cli.i(longOpt:'id', args:1, argName:'id', 'DBB repository id')
 	//cli.p(longOpt:'pw', args:1, argName:'password', 'DBB password')
