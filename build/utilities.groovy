@@ -32,7 +32,7 @@ def deleteDatasets(def datasets){
 		if (ZFile.dsExists("//'$dataset'")){
 			println("DELETE: ${dataset}. . .")
 			ZFile.remove("//'$dataset'")
-			}
+		}
 	}
 }
 
@@ -98,31 +98,41 @@ def copySeqtoHFS(Map copy_map){ // map format should be "full path to file" : "d
 }
 
 /*
-* compileProgram - compiles a program 
+* compilePrograms - compiles a list of programs (strings)
 */
-def compileProgram(String srcDS, String member, String compilerDS, String copyDS, String objectDS, String log_file){
+def compile_programs(String[] program_list, def properties){
 	def tempOptions = "cyl space(5,5) unit(vio) new"
+	int rc
+	def compile
 
-	def compile = new MVSExec().pgm("IGYCRCTL").parm("LIST,MAP,NODYN")
-	compile.dd(new DDStatement().name("TASKLIB").dsn("${compilerDS}").options("shr"))
-	compile.dd(new DDStatement().name("SYSIN").dsn("${srcDS}($member)").options("shr"))
-	compile.dd(new DDStatement().name("SYSLIB").dsn("${copyDS}").options("shr")) //copybook .COBCOPY
-	compile.dd(new DDStatement().name("SYSLIN").dsn("${objectDS}($member)").options("shr"))
-	(1..17).toList().each { num ->
-		compile.dd(new DDStatement().name("SYSUT$num").options(tempOptions))
+	program_list.each { program -> 
+
+		String log_file = "${properties.workDir}/${program}_compile.log"
+
+		//Set up Compilation 
+		compile = new MVSExec().pgm("IGYCRCTL").parm("LIST,MAP,NODYN")
+		compile.dd(new DDStatement().name("TASKLIB").dsn("${properties.SIGYCOMP}").options("shr")) //compilerDS
+		compile.dd(new DDStatement().name("SYSIN").dsn("${properties.srcPDS}($program)").options("shr"))
+		compile.dd(new DDStatement().name("SYSLIB").dsn("${properties.copyPDS}").options("shr")) //copybook .COBCOPY
+		compile.dd(new DDStatement().name("SYSLIN").dsn("${properties.objPDS}($program)").options("shr"))
+		(1..17).toList().each { num ->
+			compile.dd(new DDStatement().name("SYSUT$num").options(tempOptions))
+			}
+		compile.dd(new DDStatement().name("SYSMDECK").options(tempOptions))
+		compile.dd(new DDStatement().name("SYSPRINT").options(tempOptions))
+		compile.copy(new CopyToHFS().ddName("SYSPRINT").file(new File(log_file)))
+		
+		//Compile Program
+		println("COMPILE: ${properties.srcPDS}:${program} -> ${properties.objPDS}:${program}")
+		rc = compile.execute() 
+
+		if (rc > 4){
+			println(" ${program} Compile failed!  RC=$rc")
+			System.exit(rc)
 		}
-	compile.dd(new DDStatement().name("SYSMDECK").options(tempOptions))
-	compile.dd(new DDStatement().name("SYSPRINT").options(tempOptions))
-	compile.copy(new CopyToHFS().ddName("SYSPRINT").file(new File(log_file)))
-	println("COMPILE: ${srcDS}:${member} -> ${objectDS}:${member}")
-	def rc = compile.execute()
-
-	if (rc > 4){
-		println(" ${member} Compile failed!  RC=$rc")
-		System.exit(rc)
+		else
+			println(" ${program} Compile successful!  RC=$rc")
 	}
-	else
-		println(" ${member} Compile successful!  RC=$rc")
 
 	return(rc)
 }
@@ -130,42 +140,51 @@ def compileProgram(String srcDS, String member, String compilerDS, String copyDS
 /*
 * linkProgram - links a program
 */
-def linkProgram(String loadDS, String member, String objectDS, String linklibDS, String link_card, String log_file){
+//Need to make this only take a list of program (strings) and will link all programs provided (each loop)
+def link_programs(String[] program_list, def properties){
 	def tempOptions = "cyl space(5,5) unit(vio) new"
-	link_card = get_linkCard(program)
+	def link
+	int rc
 
-	def link = new MVSExec().pgm("IEWL").parm("")
-	link.dd(new DDStatement().name("SYSLMOD").dsn(loadDS).options("shr"))
-	link.dd(new DDStatement().name("SYSUT1").options(tempOptions))
-	link.dd(new DDStatement().name("OBJ").dsn(objectDS).options("shr"))
-	link.dd(new DDStatement().name("SYSLIN").instreamData(link_card)) 
-	link.dd(new DDStatement().name("SYSLIB").dsn(linklibDS).options("shr"))
-	link.dd(new DDStatement().dsn("SYS1.MACLIB").options("shr")) 
-	link.dd(new DDStatement().name("SYSPRINT").options(tempOptions))
-	link.copy(new CopyToHFS().ddName("SYSPRINT").file(new File(log_file)))
-	println("LINK: ${objectDS}:${member} -> ${loadDS}:${member}")
-	def rc = link.execute()
+	program_list.each { program -> 
+		String log_file = "${properties.workDir}/${program}_link.log"
 
-	if (rc > 4){
-		println(" ${member} Link failed!  RC=$rc")
-		System.exit(rc)
+		link_card = get_linkCard(program)
+
+		link = new MVSExec().pgm("IEWL").parm("")
+		link.dd(new DDStatement().name("SYSLMOD").dsn("${properties.loadPDS}").options("shr"))
+		link.dd(new DDStatement().name("SYSUT1").options(tempOptions))
+		link.dd(new DDStatement().name("OBJ").dsn("${properties.objPDS}").options("shr"))
+		link.dd(new DDStatement().name("SYSLIN").instreamData(link_card)) 
+		link.dd(new DDStatement().name("SYSLIB").dsn("${properties.SCEELKED}").options("shr")) //link lib
+		link.dd(new DDStatement().dsn("${properties.MACLIB}").options("shr")) //SYS1.MACLIB
+		link.dd(new DDStatement().name("SYSPRINT").options(tempOptions))
+		link.copy(new CopyToHFS().ddName("SYSPRINT").file(new File(log_file)))
+		println("LINK: ${properties.objPDS}:${program} -> ${properties.loadPDS}:${program}")
+		rc = link.execute()
+
+		if (rc > 4){
+			println(" ${program} Link failed!  RC=$rc")
+			System.exit(rc)
+		}
+		else
+			println(" ${program} Link successful!  RC=$rc")
+	
 	}
-	else
-		println(" ${member} Link successful!  RC=$rc")
 
-	return(rc)
+	return(rc) //return latest rc
 
 }
 
 /* Retreive Link Card */
-String get_linkCard(String program){
+def get_linkCard(String program){
 
-	sam1link   = """  
+sam1link   = """  
      INCLUDE OBJ(SAM1)
      ENTRY SAM1
      NAME SAM1(R)
 """
-    sam2link   = """  
+sam2link   = """  
      INCLUDE OBJ(SAM2)
      NAME SAM2(R)
 """
@@ -177,13 +196,15 @@ String get_linkCard(String program){
 			return sam2link;
 			break;
 		default:
+			println("Unable to retrieve appropraite link card for program.")
+			System.exit(1)
 			break;
 	}
 
 }
 
 
-// ***** Incremental Build Definitions: ******* //
+// ***** Build Definitions: ******* //
 def parseArgs(String[] cliArgs, String usage) {
 	def cli = new CliBuilder(usage: usage)
 	cli.s(longOpt:'sourceDir', required: true, args:1, argName:'dir', 'Absolute path to source directory')
@@ -202,7 +223,7 @@ def parseArgs(String[] cliArgs, String usage) {
 	//cli.p(longOpt:'pw', args:1, argName:'password', 'DBB password')
 	//cli.P(longOpt:'pwFile', args:1, argName:'file', 'Absolute or relative (from sourceDir) path to file containing DBB password')
 	//cli.e(longOpt:'logEncoding', args:1, argName:'encoding', 'Encoding of output logs. Default is EBCDIC')
-     //cli.b(longOpt:'buildHash', args:1, argName:'hash', 'Git commit hash for the build')
+    //cli.b(longOpt:'buildHash', args:1, argName:'hash', 'Git commit hash for the build')
 
 
 	def opts = cli.parse(cliArgs)
