@@ -64,41 +64,24 @@ else { //no build option provided, halt build
 }
 
 // Build the programs contained in the buildList
-rc = build(buildList, properties)
-
-if (rc){
-     println("There was an error building programs.")
-     System.exit(1)
-}
-else
-     println("Build Completed")
-     
+build(buildList)     
 return 0;
 
 
 
-
-
 // **** Method Definitions: ******** //
-def build(String[] programs, properties){
+def build(String[] programs){
 
      if (programs){
-          //Compile list of provided programs
-          def rc = tools.compile_programs(programs, properties)
-          if (rc){
-               return(rc);
-          }
-
-          //Link provided programs
-          rc = tools.link_programs(programs, properties)
-          if (rc)
-               return(rc);     
+          tools.compile_programs(programs)  //Compile list of provided programs
+          tools.link_programs(programs)  //Link provided programs
      }
      else{
-          return 1; //no programs provided, return 1
+          println("No programs to build!")
+          System.exit(1)
      }
 
-    return(0); //compiled and linked successfully, return 0 
+    return(0) //compiled and linked successfully, return 0 
 
 }
 

@@ -37,7 +37,7 @@ runUtils.createDatasets(dataset_map)
 
 // Copy sample customer file and transaction file
 Map copy_map = ["${sourceDir}/resources/custfile.txt":"${custFile}", "${sourceDir}/resources/tranfile.txt":"$tranFile"];
-runUtils.copyHFStoSeq(copy_map)
+copyHFStoSeq(copy_map)
 
 // ****** RUN SAM 1 ******* //
 
@@ -69,8 +69,74 @@ else {
 
 // Copy output Datasets to HFS for displaying to console / log:
 copy_map = ["${custOut_path}":"${custOut}", "${custRpt_path}": "${custRpt}"]
-runUtils.copySeqtoHFS(copy_map)
+copySeqtoHFS(copy_map)
 
 //Print custRpt to the console
 printf("\n** ${custRpt} or ${custRpt_path} **\n")
 println(new File(custRpt_path).text)
+
+
+
+
+// **** METHOD DEFINITIONS ***** //
+
+/*
+* copySeq - copies one or more USS files to sequential datasets, accepts map with format USS_FILE_PATH:DATASET_NAME
+*/
+def copyHFStoSeq(Map copy_map){ // map format should be "full path to file" : "dataset name"
+	files_name = copy_map.keySet();
+	if (files_name) {
+		files_name.each { file -> 
+			dataset = copy_map.get(file) //pull corresponding dataset from map
+			dataset_format = "//'${dataset}'" //adding '//' signifies destination is a MVS dataset
+			println("COPY: ${file} -> ${dataset} (sequential). . .");
+
+			//initialize the copy command using USS 'cp' command
+			String cmd = "cp -v ${file} ${dataset_format}" //using -v to actually get a console response
+			StringBuffer response = new StringBuffer()
+			StringBuffer error = new StringBuffer()
+			
+			//execute command and process output
+			Process process = cmd.execute()
+			process.waitForProcessOutput(response, error)
+			if (error) {
+				println("*? Warning executing 'cp' shell command.\n command: $cmd \n error: $error")	
+				return(1)
+			}
+			else if (response) {
+				//println(response)
+				return(0)
+			} 
+		}
+	}
+}
+
+/*
+* copySeqtoHFS - copies one or more sequential dataset to HFS files, accepts map with format USS_FILE_PATH:DATASET_NAME
+*/
+def copySeqtoHFS(Map copy_map){ // map format should be "full path to file" : "dataset name"
+	files_name = copy_map.keySet();
+	if (files_name) {
+		files_name.each { file -> 
+			dataset = copy_map.get(file) //pull corresponding dataset from map
+			dataset_format = "//'${dataset}'" //adding '//' signifies destination is a MVS dataset
+			println("COPY: ${dataset} (sequential) -> ${file}. . .");
+
+			//initialize the copy command using USS 'cp' command
+			String cmd = "cp -v ${dataset_format} ${file}" //using -v to actually get a console response
+			StringBuffer response = new StringBuffer()
+			StringBuffer error = new StringBuffer()
+			
+			//execute command and process output
+			Process process = cmd.execute()
+			process.waitForProcessOutput(response, error)
+			if (error) {
+				println("*? Warning executing 'cp' shell command.\n command: $cmd \n error: $error")
+				return(1)	
+			}
+			else if (response) {
+				return(0)
+			} 
+		}
+	}
+}

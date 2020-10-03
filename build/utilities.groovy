@@ -37,80 +37,18 @@ def deleteDatasets(def datasets){
 }
 
 /*
-* copySeq - copies one or more USS files to sequential datasets, accepts map with format USS_FILE_PATH:DATASET_NAME
+* compile_programs - compiles a list of programs (strings representing the program names, i.e. ["SAM1", "SAM2"])
 */
-def copyHFStoSeq(Map copy_map){ // map format should be "full path to file" : "dataset name"
-	files_name = copy_map.keySet();
-	if (files_name) {
-		files_name.each { file -> 
-			dataset = copy_map.get(file) //pull corresponding dataset from map
-			dataset_format = "//'${dataset}'" //adding '//' signifies destination is a MVS dataset
-			println("COPY: ${file} -> ${dataset} (sequential). . .");
-
-			//initialize the copy command using USS 'cp' command
-			String cmd = "cp -v ${file} ${dataset_format}" //using -v to actually get a console response
-			StringBuffer response = new StringBuffer()
-			StringBuffer error = new StringBuffer()
-			
-			//execute command and process output
-			Process process = cmd.execute()
-			process.waitForProcessOutput(response, error)
-			if (error) {
-				println("*? Warning executing 'cp' shell command.\n command: $cmd \n error: $error")	
-				return(1)
-			}
-			else if (response) {
-				//println(response)
-				return(0)
-			} 
-		}
-	}
-}
-
-/*
-* copySeqtoHFS - copies one or more sequential dataset to HFS files, accepts map with format USS_FILE_PATH:DATASET_NAME
-*/
-def copySeqtoHFS(Map copy_map){ // map format should be "full path to file" : "dataset name"
-	files_name = copy_map.keySet();
-	if (files_name) {
-		files_name.each { file -> 
-			dataset = copy_map.get(file) //pull corresponding dataset from map
-			dataset_format = "//'${dataset}'" //adding '//' signifies destination is a MVS dataset
-			println("COPY: ${dataset} (sequential) -> ${file}. . .");
-
-			//initialize the copy command using USS 'cp' command
-			String cmd = "cp -v ${dataset_format} ${file}" //using -v to actually get a console response
-			StringBuffer response = new StringBuffer()
-			StringBuffer error = new StringBuffer()
-			
-			//execute command and process output
-			Process process = cmd.execute()
-			process.waitForProcessOutput(response, error)
-			if (error) {
-				println("*? Warning executing 'cp' shell command.\n command: $cmd \n error: $error")
-				return(1)	
-			}
-			else if (response) {
-				return(0)
-			} 
-		}
-	}
-}
-
-/*
-* compilePrograms - compiles a list of programs (strings)
-*/
-def compile_programs(String[] program_list, def properties){
+def compile_programs(String[] program_list){
 	def tempOptions = "cyl space(5,5) unit(vio) new"
-	int rc
-	def compile
+	def properties = BuildProperties.getInstance()
 
 	program_list.each { program -> 
-
+		//Initialize log file path
 		String log_file = "${properties.workDir}/${program}_compile.log"
 
 		//Set up Compilation 
-		compile = new MVSExec().pgm("IGYCRCTL").parm("LIST,MAP,NODYN")
+		def compile = new MVSExec().pgm("IGYCRCTL").parm("LIST,MAP,NODYN")
 		compile.dd(new DDStatement().name("TASKLIB").dsn("${properties.SIGYCOMP}").options("shr")) //compilerDS
 		compile.dd(new DDStatement().name("SYSIN").dsn("${properties.srcPDS}($program)").options("shr"))
 		compile.dd(new DDStatement().name("SYSLIB").dsn("${properties.copyPDS}").options("shr")) //copybook .COBCOPY
@@ -124,7 +62,7 @@ def compile_programs(String[] program_list, def properties){
 		
 		//Compile Program
 		println("COMPILE: ${properties.srcPDS}:${program} -> ${properties.objPDS}:${program}")
-		rc = compile.execute() 
+		int rc = compile.execute() 
 
 		if (rc > 4){
 			println(" ${program} Compile failed!  RC=$rc")
@@ -134,24 +72,24 @@ def compile_programs(String[] program_list, def properties){
 			println(" ${program} Compile successful!  RC=$rc")
 	}
 
-	return(rc)
+	return(0)
 }
 
 /*
-* linkProgram - links a program
+* link_programs - link edits a list of provided programs (strings representing the program names, i.e. ["SAM1", "SAM2"])
 */
-//Need to make this only take a list of program (strings) and will link all programs provided (each loop)
-def link_programs(String[] program_list, def properties){
+def link_programs(String[] program_list){
 	def tempOptions = "cyl space(5,5) unit(vio) new"
-	def link
-	int rc
-
+	def properties = BuildProperties.getInstance()
+	
 	program_list.each { program -> 
+		//Initialize log file path
 		String log_file = "${properties.workDir}/${program}_link.log"
-
+		//Get appropriate link card
 		link_card = get_linkCard(program)
 
-		link = new MVSExec().pgm("IEWL").parm("")
+		// Configure MVSExec() IEWL call to link-edit the program
+		def link = new MVSExec().pgm("IEWL").parm("")
 		link.dd(new DDStatement().name("SYSLMOD").dsn("${properties.loadPDS}").options("shr"))
 		link.dd(new DDStatement().name("SYSUT1").options(tempOptions))
 		link.dd(new DDStatement().name("OBJ").dsn("${properties.objPDS}").options("shr"))
@@ -161,7 +99,9 @@ def link_programs(String[] program_list, def properties){
 		link.dd(new DDStatement().name("SYSPRINT").options(tempOptions))
 		link.copy(new CopyToHFS().ddName("SYSPRINT").file(new File(log_file)))
 		println("LINK: ${properties.objPDS}:${program} -> ${properties.loadPDS}:${program}")
-		rc = link.execute()
+
+		// Execute the MVSExec() object
+		int rc = link.execute()
 
 		if (rc > 4){
 			println(" ${program} Link failed!  RC=$rc")
@@ -169,11 +109,8 @@ def link_programs(String[] program_list, def properties){
 		}
 		else
 			println(" ${program} Link successful!  RC=$rc")
-	
 	}
-
-	return(rc) //return latest rc
-
+	return(0) 
 }
 
 /* Retreive Link Card */
@@ -310,36 +247,3 @@ def validateRequiredOpts(OptionAccessor opts) {
 		assert opts.q : 'Missing argument --hlq'
 	}
 }
-
-def getBuildList(List<String> args) {
-    def properties = BuildProperties.getInstance()
-    def files = []
-
-	// Set the buildFile or buildList property
-	if (args) {
-		def buildFile = args[0]
-	    if (buildFile.endsWith(".txt")) {
-			if (buildFile.startsWith("/"))
-				properties.buildListFile = buildFile
-		      else
-				properties.buildListFile = "$properties.sourceDir/$buildFile".toString()
-	  	}
-	    else {
-			properties.buildFile = buildFile
-	    }
-	}
-
-	// check to see if a build file was passed in
-	if (properties.buildFile) {
-		println("** Building file $properties.buildFile")
-		files = [properties.buildFile]
-	}
-	// else check to see if a build list file was passed in
-	else if (properties.buildListFile) {
-		println("** Building files listed in $properties.buildListFile")
-	    files = new File(properties.buildListFile) as List<String>
-	}
-	
-	return files
-}
-
