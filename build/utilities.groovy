@@ -153,7 +153,8 @@ def parseArgs(String[] cliArgs, String usage) {
     cli.f(longOpt:'fullBuild', 'Flag indicating running a full build')
     cli.u(longOpt:'userBuild', 'Flag indicating running a user (single-file) build') //need to identify copybook
     cli.i(longOpt:'incrementalBuild', 'Flag indicating running an incremental/impact build')
-	cli.C(longOpt:'clean', 'Flag indicating whether to clean previous datasets')
+	cli.d(longOpt:'delete', 'Flag indicating whether to delete previous datasets')
+	cli.C(longOpt:'clean', 'Flag indicating whether to clean DBB collection')
 	//cli.r(longOpt:'repo', args:1, argName:'url', 'DBB repository URL')
 	//cli.i(longOpt:'id', args:1, argName:'id', 'DBB repository id')
 	//cli.p(longOpt:'pw', args:1, argName:'password', 'DBB password')

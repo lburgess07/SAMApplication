@@ -30,7 +30,7 @@ println("** Build start at $properties.startTime")
 new File(properties.workDir).mkdirs()
 println("** Build output will be in $properties.workDir")
 
-if (opts.C){
+if (opts.d){
      // clean up all build datasets, delete any datasets that already exist
      String[] datasets_delete = ["${properties.srcPDS}", "${properties.objPDS}", "${properties.loadPDS}", "${properties.copyPDS}"]
      tools.deleteDatasets(datasets_delete);
