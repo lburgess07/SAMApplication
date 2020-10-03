@@ -32,7 +32,7 @@ println("** Build output will be in $properties.workDir")
 
 if (opts.C){
      // clean up all build datasets, delete any datasets that already exist
-     String[] datasets_delete = ["$srcPDS", "$objPDS", "$loadPDS", "$copyPDS"]
+     String[] datasets_delete = ["${properties.srcPDS}", "${properties.objPDS}", "${properties.loadPDS}", "${properties.copyPDS}"]
      tools.deleteDatasets(datasets_delete);
 }
 
