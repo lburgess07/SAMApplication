@@ -42,8 +42,6 @@ tools.createDatasets(dataset_map);
 
 String[] buildList
 
-// Begin Creating Buildlist based on provided build argument (-f = full build, -i = incremental build, -u = user / single file build)
-
 if (properties.fullBuild) { //full build
      //Copy all files (provide map of relative file or directory paths, and the destination dataset names)
      Map copy_hash = ["${properties.sourceDir}/cobol/":"${properties.srcPDS}","${properties.sourceDir}/copybook/":"${properties.copyPDS}"]
