@@ -43,7 +43,7 @@ tools.createDatasets(dataset_map);
 String[] buildList
 
 if (properties.fullBuild) { //full build
-     //Copy all files (provide map of relative file or directory paths, and the destination dataset names)
+     //Copy all files (SAM 1 & 2 Cobol Source, CUSTCOPY and TRANREC copybooks )
      Map copy_hash = ["${properties.sourceDir}/cobol/":"${properties.srcPDS}","${properties.sourceDir}/copybook/":"${properties.copyPDS}"]
      copy_files(copy_hash)
 
@@ -67,7 +67,7 @@ return 0;
 
 
 
-// **** Method Definitions: ******** //
+// **** METHOD DEFINITIONS ***** //
 def build(String[] programs){
 
      if (programs){
