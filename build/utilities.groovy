@@ -49,9 +49,9 @@ def compile_programs(String[] program_list){
 
 		//Set up Compilation 
 		def compile = new MVSExec().pgm("IGYCRCTL").parm("LIST,MAP,NODYN")
-		compile.dd(new DDStatement().name("TASKLIB").dsn("${properties.SIGYCOMP}").options("shr")) //compilerDS
+		compile.dd(new DDStatement().name("TASKLIB").dsn(properties.SIGYCOMP).options("shr")) //compilerDS
 		compile.dd(new DDStatement().name("SYSIN").dsn("${properties.srcPDS}($program)").options("shr"))
-		compile.dd(new DDStatement().name("SYSLIB").dsn("${properties.copyPDS}").options("shr")) //copybook .COBCOPY
+		compile.dd(new DDStatement().name("SYSLIB").dsn(properties.copyPDS).options("shr")) //copybook .COBCOPY
 		compile.dd(new DDStatement().name("SYSLIN").dsn("${properties.objPDS}($program)").options("shr"))
 		(1..17).toList().each { num ->
 			compile.dd(new DDStatement().name("SYSUT$num").options(tempOptions))
@@ -90,12 +90,12 @@ def link_programs(String[] program_list){
 
 		// Configure MVSExec() IEWL call to link-edit the program
 		def link = new MVSExec().pgm("IEWL").parm("")
-		link.dd(new DDStatement().name("SYSLMOD").dsn("${properties.loadPDS}").options("shr"))
+		link.dd(new DDStatement().name("SYSLMOD").dsn(properties.loadPDS).options("shr"))
 		link.dd(new DDStatement().name("SYSUT1").options(tempOptions))
-		link.dd(new DDStatement().name("OBJ").dsn("${properties.objPDS}").options("shr"))
+		link.dd(new DDStatement().name("OBJ").dsn(properties.objPDS).options("shr"))
 		link.dd(new DDStatement().name("SYSLIN").instreamData(link_card)) 
-		link.dd(new DDStatement().name("SYSLIB").dsn("${properties.SCEELKED}").options("shr")) //link lib
-		link.dd(new DDStatement().dsn("${properties.MACLIB}").options("shr")) //SYS1.MACLIB
+		link.dd(new DDStatement().name("SYSLIB").dsn(properties.SCEELKED).options("shr")) //link lib
+		link.dd(new DDStatement().dsn(properties.MACLIB).options("shr")) //SYS1.MACLIB
 		link.dd(new DDStatement().name("SYSPRINT").options(tempOptions))
 		link.copy(new CopyToHFS().ddName("SYSPRINT").file(new File(log_file)))
 		println("LINK: ${properties.objPDS}:${program} -> ${properties.loadPDS}:${program}")
@@ -144,9 +144,9 @@ sam2link   = """
 // ***** Build Definitions: ******* //
 def parseArgs(String[] cliArgs, String usage) {
 	def cli = new CliBuilder(usage: usage)
-	cli.s(longOpt:'sourceDir', required: true, args:1, argName:'dir', 'Absolute path to source directory')
-	cli.w(longOpt:'workDir', required: true, args:1, argName:'dir', 'Absolute path to the build output directory')
-	cli.q(longOpt:'hlq', required: true, args:1, argName:'hlq', 'High level qualifier for partition data sets')
+	cli.s(longOpt:'sourceDir', args:1, argName:'dir', 'Absolute path to source directory')
+	cli.w(longOpt:'workDir', args:1, argName:'dir', 'Absolute path to the build output directory')
+	cli.q(longOpt:'hlq', args:1, argName:'hlq', 'High level qualifier for partition data sets')
 	cli.c(longOpt:'collection', args:1, argName:'name', 'Name of the dependency data collection')
 	cli.u(longOpt:'userBuild', 'Flag indicating running a user build')
 	cli.h(longOpt:'help', 'Prints this message')
@@ -164,7 +164,7 @@ def parseArgs(String[] cliArgs, String usage) {
 
 
 	def opts = cli.parse(cliArgs)
-	if (opts.h) { // if help option used, print usage and exit
+	if (opts.help) { // if help option used, print usage and exit
 	 	cli.usage()
 		System.exit(0)
 	}
@@ -239,12 +239,12 @@ def loadProperties(OptionAccessor opts) {
 
 def validateRequiredOpts(OptionAccessor opts) {
 	if (!opts.s) {
-		assert opts.s : 'Missing argument --sourceDir'
+		assert opts.s : 'Missing argument -s (--sourceDir)'
 	}
 	if (!opts.w) {
-		assert opts.w : 'Missing argument --workDir'
+		assert opts.w : 'Missing argument -w (--workDir)'
 	}
 	if (!opts.q) {
-		assert opts.q : 'Missing argument --hlq'
+		assert opts.q : 'Missing argument -q (--hlq)'
 	}
 }

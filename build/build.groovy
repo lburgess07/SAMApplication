@@ -8,11 +8,6 @@ import groovy.time.*
 
 @Field def tools = loadScript(new File("utilities.groovy"))
 
-//Print Info
-println("java.version="+System.getProperty("java.runtime.version"))
-println("java.home="+System.getProperty("java.home"))
-println("user.dir="+System.getProperty("user.dir"))
-
 // parse command line arguments and load build properties
 def usage = "build.groovy [options] buildfile"
 def opts = tools.parseArgs(args, usage)
@@ -21,6 +16,12 @@ def properties = tools.loadProperties(opts)
 //if (!properties.userBuild) 
      //If not single file build, validateRequiredProperties
 	//tools.validateRequiredProperties(["dbb.RepositoryClient.url", "dbb.RepositoryClient.userId", "password", "collection"])
+
+
+//Print Info
+println("java.version="+System.getProperty("java.runtime.version"))
+println("java.home="+System.getProperty("java.home"))
+println("user.dir="+System.getProperty("user.dir"))
 
 def startTime = new Date()
 properties.startTime = startTime.format("yyyyMMdd.hhmmss.mmm")
@@ -63,7 +64,7 @@ else { //no build option provided, halt build
 
 // Build the programs contained in the buildList
 build(buildList)     
-return 0;
+return 0
 
 
 
