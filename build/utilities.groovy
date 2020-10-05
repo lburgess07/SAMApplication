@@ -194,7 +194,7 @@ def loadProperties(OptionAccessor opts) {
 
 	if (opts.u) properties.userBuild = "true"
 	if (opts.f) properties.fullBuild = "true"
-	if (opts.f) properties.incrementalBuild = "true"
+	if (opts.i) properties.incrementalBuild = "true"
 
 	
 	// override new default properties
@@ -225,13 +225,6 @@ def loadProperties(OptionAccessor opts) {
 	// load datasets.properties containing system specific PDS names used by Mortgage Application build
 	properties.load(new File("${getScriptDir()}/datasets.properties"))
 	// load file.properties containing file specific properties like script mappings and CICS/DB2 content flags
-	// One may also use YAML files as an alternative to properties files (DBB 1.0.6 and later):
-	//     properties.load(new File("${getScriptDir()}/file.yaml"))
-	//properties.load(new File("${getScriptDir()}/file.properties"))
-	// load bind.properties containing DB2 BIND PACKAGE parameters used by Mortgage Application build
-	//properties.load(new File("${getScriptDir()}/bind.properties"))
-	// load bindlinkEditScanner.properties containing Link Edit scanning options used by Mortgage Application build
-	//properties.load(new File("${getScriptDir()}/linkEditScanner.properties"))
 
 	return properties
 }
